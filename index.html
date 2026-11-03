@@ -3,199 +3,35 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Andrew Crena's house collection: tracks with BPM, searchable and sortable.">
+<meta name="description" content="Andrew Crena's record collection, the labels behind it, and the tracks he plays, with BPM.">
 <meta name="color-scheme" content="dark light">
 <meta name="theme-color" content="#0a0a0f">
 <title>House Collection · Andrew Crena</title>
-<style>
-  :root{
-    --bg:#0a0a0f; --surface:#13131a; --surface2:#1c1c26; --border:#2e2e40;
-    --accent:#8b7bff; --accent-ink:#ffffff; --text:#f0eeff; --muted:#a3a3c2; --dim:#8a8aa8;
-    --odd:#13131a; --even:#0f0f16;
-    --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",system-ui,sans-serif;
-    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
-  }
-  @media (prefers-color-scheme:light){
-    :root{ --bg:#f6f5fb; --surface:#ffffff; --surface2:#eeedf6; --border:#d6d4e6;
-      --accent:#5a46e0; --text:#17152a; --muted:#4f4c6b; --dim:#66637f; --odd:#ffffff; --even:#f8f7fd; }
-  }
-  *{box-sizing:border-box}
-  [hidden]{display:none!important}
-  body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 var(--sans);-webkit-font-smoothing:antialiased}
-  button,input{font:inherit;color:inherit}
-  button{cursor:pointer}
-  :focus-visible{outline:3px solid var(--accent);outline-offset:2px}
-  .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
-  .wrap{max-width:760px;margin:0 auto;padding:max(16px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) 40px max(14px,env(safe-area-inset-left))}
-  .home{display:inline-block;margin:0 0 12px;color:var(--muted);text-decoration:none;font-size:14px;padding:6px 0}
-  .home:hover{color:var(--text)}
-
-  .app{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden}
-  .head{padding:16px;border-bottom:1px solid var(--border)}
-  .top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
-  h1{font-size:20px;font-weight:700;letter-spacing:-.3px;margin:0}
-  .count{font-size:12px;color:var(--muted);background:var(--surface2);padding:3px 10px;border-radius:20px;border:1px solid var(--border);white-space:nowrap}
-  .search{position:relative}
-  .search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--dim);pointer-events:none}
-  .search input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:0 12px 0 36px;min-height:44px;font-size:16px;-webkit-appearance:none;appearance:none}
-  .search input::placeholder{color:var(--dim)}
-
-  .bar{padding:12px 16px 0;border-bottom:1px solid var(--border)}
-  .label{font-size:11px;font-weight:700;letter-spacing:.8px;color:var(--muted);text-transform:uppercase;margin:0 0 6px}
-  .chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:12px;scrollbar-width:thin}
-  .chip{flex-shrink:0;min-height:36px;padding:0 13px;border-radius:20px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);font-size:13px;font-weight:600;white-space:nowrap}
-  .chip .n{font-weight:400;opacity:.75;margin-left:4px;font-size:12px}
-  .chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
-
-  .sorts{display:flex;border-bottom:2px solid var(--border)}
-  .sort{flex:1;min-height:44px;background:none;border:0;font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.3px}
-  .sort[aria-pressed="true"]{color:var(--text);box-shadow:inset 0 -2px 0 var(--accent)}
-
-  ol.list{list-style:none;margin:0;padding:0}
-  .track{display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--border)}
-  .track:nth-child(odd){background:var(--odd)} .track:nth-child(even){background:var(--even)}
-  .num{font:12px var(--mono);color:var(--dim);text-align:right}
-  .info{min-width:0}
-  .t{font-weight:600;overflow-wrap:anywhere}
-  .a{color:var(--muted);font-size:14px;overflow-wrap:anywhere}
-  .al{color:var(--dim);font-size:13px;overflow-wrap:anywhere}
-  .bpm{text-align:right;font-family:var(--mono);line-height:1.15}
-  .bpm b{display:block;font-size:16px;color:var(--accent)}
-  .bpm span{font-size:10px;letter-spacing:.8px;color:var(--dim)}
-  .bpm i{display:block;font-style:normal;font-size:11px;color:var(--muted);margin-top:2px}
-  .empty{padding:40px 16px;text-align:center;color:var(--muted)}
-  footer{margin-top:16px;color:var(--dim);font-size:13px;text-align:center}
-  footer a{color:var(--muted)}
-</style>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
+<a class="skip" href="#view">Skip to content</a>
 <div class="wrap">
-  <a class="home" href="https://andrew-crena.github.io/">← All projects</a>
-  <main class="app">
-    <div class="head">
-      <div class="top">
-        <h1>House Collection</h1>
-        <span class="count" id="count" role="status" aria-live="polite">Loading…</span>
-      </div>
-      <label class="search">
-        <span class="sr-only">Search title, artist or album</span>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-        <input type="search" id="q" placeholder="Search title, artist, album…" autocomplete="off" autocorrect="off" spellcheck="false">
-      </label>
-    </div>
+  <header class="masthead">
+    <a class="home" href="https://andrew-crena.github.io/">← All projects</a>
+    <h1><a href="#/">House Collection</a></h1>
+    <p class="lede" id="lede">Records on the shelf, the labels behind them, and the tracks I play.</p>
+    <nav class="tabs" aria-label="Sections">
+      <a href="#/" data-tab="records">Records</a>
+      <a href="#/labels" data-tab="labels">Labels</a>
+      <a href="#/tracks" data-tab="tracks">Tracks</a>
+      <button type="button" id="pull" class="pull">Pull a record</button>
+    </nav>
+  </header>
 
-    <div class="bar">
-      <p class="label" id="bpmlabel">BPM range</p>
-      <div class="chips" id="chips" role="group" aria-labelledby="bpmlabel"></div>
-    </div>
+  <main id="view" tabindex="-1" aria-live="off"><p class="loading">Loading the crate…</p></main>
 
-    <div class="sorts" role="group" aria-label="Sort by">
-      <button type="button" class="sort" data-sort="title">Title</button>
-      <button type="button" class="sort" data-sort="artist">Artist</button>
-      <button type="button" class="sort" data-sort="bpm">BPM</button>
-    </div>
-
-    <ol class="list" id="list" aria-label="Tracks"></ol>
-  </main>
-  <footer>BPM detected from the audio files. Above 140 BPM, the half-time reading is shown as well.</footer>
+  <footer class="foot">
+    <span id="synced"></span>
+    <span>Record data and images from <a href="https://www.discogs.com/user/andrewcrena/collection">Discogs</a>.</span>
+  </footer>
 </div>
-
-<script>
-(() => {
-  'use strict';
-  const RANGES = [
-    { id: 'all', label: 'All', min: 0, max: Infinity },
-    { id: 'lt115', label: 'Under 115', min: 0, max: 114.95 },
-    { id: '115', label: '115–119', min: 114.95, max: 119.95 },
-    { id: '120', label: '120–122', min: 119.95, max: 122.95 },
-    { id: '123', label: '123–125', min: 122.95, max: 125.95 },
-    { id: '126', label: '126–128', min: 125.95, max: 128.95 },
-    { id: '129', label: '129–132', min: 128.95, max: 132.95 },
-    { id: '133', label: '133+', min: 132.95, max: Infinity },
-  ];
-  const $ = id => document.getElementById(id);
-  const params = new URLSearchParams(location.search);
-  let tracks = [];
-  let range = RANGES.find(r => r.id === params.get('bpm')) || RANGES[0];
-  let sortKey = ['title', 'artist', 'bpm'].includes(params.get('sort')) ? params.get('sort') : 'title';
-  let asc = params.get('dir') ? params.get('dir') !== 'desc' : sortKey !== 'bpm';
-  $('q').value = params.get('q') || '';
-
-  const coll = new Intl.Collator(undefined, { sensitivity: 'base', numeric: true });
-  const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
-
-  function saveState() {
-    const p = new URLSearchParams();
-    const q = $('q').value.trim();
-    if (q) p.set('q', q);
-    if (range.id !== 'all') p.set('bpm', range.id);
-    if (sortKey !== 'title' || !asc) { p.set('sort', sortKey); p.set('dir', asc ? 'asc' : 'desc'); }
-    history.replaceState(null, '', p.toString() ? '?' + p : location.pathname);
-  }
-
-  function buildChips() {
-    const box = $('chips'); box.textContent = '';
-    for (const r of RANGES) {
-      const n = tracks.filter(t => t.bpm > r.min && t.bpm <= r.max).length;
-      const b = el('button', 'chip', r.label);
-      b.type = 'button';
-      b.setAttribute('aria-pressed', String(r === range));
-      b.append(el('span', 'n', String(n)));
-      b.addEventListener('click', () => { range = r; buildChips(); render(); });
-      box.append(b);
-    }
-  }
-
-  function buildSorts() {
-    document.querySelectorAll('.sort').forEach(b => {
-      const on = b.dataset.sort === sortKey;
-      b.setAttribute('aria-pressed', String(on));
-      const name = { title: 'Title', artist: 'Artist', bpm: 'BPM' }[b.dataset.sort];
-      b.textContent = name + (on ? (asc ? ' ↑' : ' ↓') : '');
-      b.setAttribute('aria-label', 'Sort by ' + b.dataset.sort + (on ? (asc ? ', ascending' : ', descending') : ''));
-    });
-  }
-  document.querySelectorAll('.sort').forEach(b => b.addEventListener('click', () => {
-    if (sortKey === b.dataset.sort) asc = !asc; else { sortKey = b.dataset.sort; asc = sortKey !== 'bpm'; }
-    buildSorts(); render();
-  }));
-
-  function render() {
-    const q = $('q').value.trim().toLowerCase();
-    const list = tracks.filter(t => t.bpm > range.min && t.bpm <= range.max &&
-      (!q || (t.title + ' ' + t.artist + ' ' + t.album).toLowerCase().includes(q)));
-    list.sort((a, b) => {
-      const r = sortKey === 'bpm' ? a.bpm - b.bpm : coll.compare(a[sortKey] || '￿', b[sortKey] || '￿');
-      return (asc ? r : -r) || coll.compare(a.title, b.title);
-    });
-    $('count').textContent = list.length === tracks.length ? tracks.length + ' tracks' : list.length + ' of ' + tracks.length + ' tracks';
-    const ol = $('list'); ol.textContent = '';
-    if (!list.length) { ol.append(el('li', 'empty', 'No tracks match.')); saveState(); return; }
-    const frag = document.createDocumentFragment();
-    list.forEach((t, i) => {
-      const li = el('li', 'track');
-      li.append(el('span', 'num', String(i + 1)));
-      const info = el('div', 'info');
-      info.append(el('div', 't', t.title));
-      if (t.artist) info.append(el('div', 'a', t.artist));
-      if (t.album) info.append(el('div', 'al', t.album));
-      li.append(info);
-      const bp = el('div', 'bpm');
-      bp.append(el('b', null, t.bpm.toFixed(1)), el('span', null, 'BPM'));
-      if (t.bpm > 140) bp.append(el('i', null, '½ ' + (t.bpm / 2).toFixed(1)));
-      li.append(bp);
-      frag.append(li);
-    });
-    ol.append(frag);
-    saveState();
-  }
-  $('q').addEventListener('input', render);
-
-  fetch('tracks.json', { cache: 'no-cache' })
-    .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
-    .then(d => { tracks = d; buildChips(); buildSorts(); render(); })
-    .catch(() => { $('count').textContent = 'Could not load'; $('list').append(el('li', 'empty', 'The track list could not be loaded. Try refreshing.')); });
-})();
-</script>
+<div id="announce" class="sr-only" aria-live="polite"></div>
+<script src="app.js"></script>
 </body>
 </html>
