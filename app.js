@@ -21,9 +21,10 @@ function h(tag, attrs, ...kids) {
     else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
     else n.setAttribute(k, v === true ? '' : v);
   }
-  for (const k of kids.flat()) if (k != null && k !== false) n.append(k);
+  for (const k of kids.flat(Infinity)) if (k != null && k !== false) n.append(k);
   return n;
 }
+const put = (...kids) => { for (const k of kids.flat(Infinity)) if (k != null && k !== false) view.append(k); };
 const announce = msg => { announceEl.textContent = ''; setTimeout(() => { announceEl.textContent = msg; }, 30); };
 const enc = encodeURIComponent;
 
@@ -39,6 +40,9 @@ function sleeve(r, big) {
 }
 const decade = y => y ? Math.floor(y / 10) * 10 : 0;
 function paragraphs(text) { return String(text).split(/\n\s*\n/).map(p => h('p', {}, p.trim())); }
+
+// Thumbnails that fail to load just disappear instead of showing a broken icon.
+document.addEventListener('error', ev => { const t = ev.target; if (t.tagName === 'IMG' && !t.closest('.sleeve')) t.style.visibility = 'hidden'; }, true);
 
 /* ---------- routing: #/path?query ---------- */
 function route() {
@@ -101,7 +105,7 @@ function renderRecords(q) {
 
   const count = h('p', { class: 'count', role: 'status' });
   const grid = h('ul', { class: 'grid', 'aria-label': 'Records' });
-  view.append(
+  put(
     h('h2', { class: 'sr-only' }, 'Records'),
     h('div', { class: 'toolbar' },
       h('label', { class: 'search' }, searchIcon(), search),
@@ -177,7 +181,7 @@ function renderRecord(r, pulled) {
       h('button', { type: 'button', class: 'btn', onclick: pull }, 'Pull another'),
       h('a', { class: 'btn', href: r.url }, 'View on Discogs')));
 
-  view.append(
+  put(
     h('a', { class: 'back', href: '#/' }, '← All records'),
     h('article', { class: 'record' + (pulled && !reduceMotion ? ' pulled' : '') }, sleeve(r, true), right));
 }
@@ -201,27 +205,48 @@ function yearsOf(e) {
 }
 function renderLabels() {
   document.title = 'Labels · House Collection';
-  const noted = labelsIdx.filter(e => NOTES.labels[e.name]).length;
-  const list = h('ul', { class: 'labels' });
-  for (const e of labelsIdx) {
-    const strip = h('div', { class: 'strip', 'aria-hidden': 'true' },
-      e.recs.slice().sort((a, b) => (a.r.year || 0) - (b.r.year || 0)).slice(0, 14)
-        .map(x => x.r.thumb ? h('img', { src: x.r.thumb, alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' }) : null));
-    const note = NOTES.labels[e.name];
-    list.append(h('li', { class: 'lab' }, h('a', { href: '#/l/' + enc(e.name) },
-      h('span', { class: 'ln' }, e.name),
-      h('span', { class: 'lc' }, e.recs.length + (e.recs.length === 1 ? ' record' : ' records') + (yearsOf(e) ? ' · ' + yearsOf(e) : '')),
-      note ? h('p', { class: 'lnote' }, String(note).split(/\n/)[0]) : null,
-      strip)));
+  const q = route().q;
+  const genres = ['Electronic', 'Jazz', 'Funk / Soul', 'Rock', 'Hip Hop'];
+  let g = genres.includes(q.get('genre')) ? q.get('genre') : '';
+  const chips = h('div', { class: 'chips', role: 'group', 'aria-label': 'Show labels by genre' });
+  const intro = h('p', { class: 'count', role: 'status' });
+  const multi = h('ul', { class: 'labels', 'aria-labelledby': 'lab-multi' });
+  const singles = h('p', { class: 'singles' });
+  const multiH = h('h3', { id: 'lab-multi' }, 'More than one record');
+  const singlesH = h('h3', {}, 'One record each');
+  put(h('h2', {}, 'Labels'), chips, intro, multiH, multi, singlesH, singles);
+
+  function draw() {
+    chips.textContent = '';
+    for (const x of ['', ...genres]) chips.append(h('button', { type: 'button', class: 'chip', 'aria-pressed': String(g === x),
+      onclick: () => { g = x; const p = new URLSearchParams(); if (g) p.set('genre', g); setQuery(p); draw(); } }, x || 'All'));
+    const pick = labelsIdx.map(e => ({ ...e, recs: g ? e.recs.filter(x => x.r.genres.includes(g)) : e.recs })).filter(e => e.recs.length)
+      .sort((a, b) => b.recs.length - a.recs.length || coll.compare(a.name, b.name));
+    const many = pick.filter(e => e.recs.length > 1), one = pick.filter(e => e.recs.length === 1).sort((a, b) => coll.compare(a.name, b.name));
+    const noted = pick.filter(e => NOTES.labels[e.name]).length;
+    intro.textContent = pick.length + ' labels' + (g ? ' with ' + g + ' records' : '') + (noted ? ', ' + noted + ' with notes' : '') + '. Each opens a timeline of its records, oldest first.';
+    multi.textContent = '';
+    for (const e of many) {
+      const strip = h('div', { class: 'strip', 'aria-hidden': 'true' },
+        e.recs.slice().sort((a, b) => (a.r.year || 0) - (b.r.year || 0)).slice(0, 14)
+          .map(x => x.r.thumb ? h('img', { src: x.r.thumb, alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' }) : null));
+      const note = NOTES.labels[e.name];
+      multi.append(h('li', { class: 'lab' }, h('a', { href: '#/l/' + enc(e.name) },
+        h('span', { class: 'ln' }, e.name),
+        h('span', { class: 'lc' }, e.recs.length + ' records' + (yearsOf(e) ? ' · ' + yearsOf(e) : '')),
+        note ? h('p', { class: 'lnote' }, String(note).split(/\n/)[0]) : null,
+        strip)));
+    }
+    multiH.hidden = !many.length;
+    singles.textContent = '';
+    one.forEach((e, i) => singles.append(i ? ' · ' : '', h('a', { href: '#/l/' + enc(e.name) }, e.name)));
+    singlesH.hidden = !one.length;
   }
-  view.append(
-    h('h2', {}, 'Labels'),
-    h('p', { class: 'count' }, labelsIdx.length + ' labels' + (noted ? ', ' + noted + ' with notes' : '') + '. Each one opens a timeline of its records on the shelf, oldest first.'),
-    list);
+  draw();
 }
 function renderLabel(name) {
   const e = labelsIdx.find(x => x.name === name);
-  if (!e) { view.append(h('h2', {}, 'Label not found'), h('a', { class: 'back', href: '#/labels' }, '← All labels')); return; }
+  if (!e) { put(h('h2', {}, 'Label not found'), h('a', { class: 'back', href: '#/labels' }, '← All labels')); return; }
   document.title = e.name + ' · House Collection';
   const note = NOTES.labels[e.name];
   const tl = h('ol', { class: 'timeline' });
@@ -231,7 +256,7 @@ function renderLabel(name) {
         x.r.thumb ? h('img', { src: x.r.thumb, alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' }) : h('span', { class: 'ph' }),
         h('span', {}, h('b', {}, x.r.title), h('div', { class: 'ta' }, x.r.artist), x.catno && x.catno !== 'none' ? h('div', { class: 'cat' }, x.catno) : null))));
   }
-  view.append(
+  put(
     h('a', { class: 'back', href: '#/labels' }, '← All labels'),
     h('h2', {}, e.name),
     h('p', { class: 'count' }, e.recs.length + (e.recs.length === 1 ? ' record' : ' records') + (yearsOf(e) ? ', ' + yearsOf(e) : '') + ' · ',
@@ -263,7 +288,7 @@ function renderTracks(q) {
   const sorts = h('div', { class: 'sorts', role: 'group', 'aria-label': 'Sort and show' });
   const count = h('p', { class: 'count', role: 'status' });
   const list = h('ol', { class: 'tracks', 'aria-label': 'Tracks' });
-  view.append(h('h2', { class: 'sr-only' }, 'Tracks'),
+  put(h('h2', { class: 'sr-only' }, 'Tracks'),
     h('div', { class: 'toolbar' }, h('label', { class: 'search' }, searchIcon(), search)), chips, sorts, count, list);
 
   const save = () => {
@@ -330,7 +355,8 @@ let lastPulled = [];
 function pull() {
   if (!C) return;
   // Avoid repeating any of the last 20 pulls.
-  const pool = C.releases.filter(r => !lastPulled.includes(r.id));
+  const cur = route().parts[0] === 'r' ? +route().parts[1] : null;
+  const pool = C.releases.filter(r => r.id !== cur && !lastPulled.includes(r.id));
   const r = pool[Math.floor(Math.random() * pool.length)] || C.releases[0];
   lastPulled.push(r.id); if (lastPulled.length > 20) lastPulled.shift();
   location.hash = '#/r/' + r.id + '?pulled=1';
@@ -342,7 +368,7 @@ document.getElementById('pull').addEventListener('click', pull);
 const getJSON = (u, fallback) => fetch(u, { cache: 'no-cache' }).then(r => r.ok ? r.json() : fallback).catch(() => fallback);
 Promise.all([getJSON('data/collection.json', null), getJSON('tracks.json', []), getJSON('data/notes.json', { releases: {}, labels: {} })])
   .then(([c, t, n]) => {
-    if (!c) { view.textContent = ''; view.append(h('p', { class: 'empty' }, 'The collection could not be loaded. Try refreshing.')); return; }
+    if (!c) { view.textContent = ''; put(h('p', { class: 'empty' }, 'The collection could not be loaded. Try refreshing.')); return; }
     C = c; TRACKS = t; NOTES = { releases: n.releases || {}, labels: n.labels || {} };
     byId = new Map(C.releases.map(r => [r.id, r]));
     for (const r of C.releases) for (const tr of r.tracks) if (tr.digital != null && !vinylOf.has(tr.digital)) vinylOf.set(tr.digital, r.id);
