@@ -1,0 +1,7 @@
+{
+  "_how": "Liner notes for records go under releases, keyed by the Discogs release ID (the number in the record's URL on the site or on Discogs). Notes about a label go under labels, keyed by the label name exactly as the site shows it. Blank lines start a new paragraph. Delete these example lines when you add your own.",
+  "releases": {
+  },
+  "labels": {
+  }
+}
