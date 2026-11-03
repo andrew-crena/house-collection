@@ -182,9 +182,18 @@ function renderRecord(r, pulled) {
       h('button', { type: 'button', class: 'btn', onclick: () => pull() }, 'Pull another'),
       h('a', { class: 'btn', href: r.url }, 'View on Discogs')));
 
-  put(
-    h('a', { class: 'back', href: '#/' }, '← All records'),
-    h('article', { class: 'record' + (pulled && !reduceMotion ? ' pulled' : '') }, sleeve(r, true), right));
+  const art = h('article', { class: 'record' + (pulled && !reduceMotion ? ' pulled' : '') }, sleeve(r, true), right);
+  put(h('a', { class: 'back', href: '#/' }, '← All records'), art,
+    h('p', { class: 'swipehint' }, 'Swipe left to pull another, right to go back.'));
+  // Swipe: left pulls another record, right goes back. Ignores mostly-vertical drags (scrolling).
+  let sx = null, sy = 0;
+  art.addEventListener('touchstart', e => { if (e.touches.length === 1) { sx = e.touches[0].clientX; sy = e.touches[0].clientY; } }, { passive: true });
+  art.addEventListener('touchend', e => {
+    if (sx === null) return;
+    const dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy; sx = null;
+    if (Math.abs(dx) < 70 || Math.abs(dy) > Math.abs(dx) * 0.6) return;
+    if (dx < 0) pull(); else history.length > 1 ? history.back() : (location.hash = '#/');
+  }, { passive: true });
 }
 
 /* ---------- labels (lineage) ---------- */
@@ -365,6 +374,10 @@ function pull(replace) {
   announce('Pulled ' + r.title + ' by ' + r.artist);
 }
 document.getElementById('pull').addEventListener('click', () => pull());
+
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
 
 /* ---------- load ---------- */
 const getJSON = (u, fallback) => fetch(u, { cache: 'no-cache' }).then(r => r.ok ? r.json() : fallback).catch(() => fallback);
