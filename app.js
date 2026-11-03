@@ -67,6 +67,7 @@ function render(focus) {
   const { parts, q } = route();
   const path = parts.join('/');
   view.textContent = '';
+  if (parts[0] === 'pull') { pull(true); return; }
   if (parts[0] === 'r' && byId.has(+parts[1])) { setTab('records'); renderRecord(byId.get(+parts[1]), q.has('pulled')); }
   else if (parts[0] === 'labels') { setTab('labels'); renderLabels(); }
   else if (parts[0] === 'l' && parts[1]) { setTab('labels'); renderLabel(parts[1]); }
@@ -178,7 +179,7 @@ function renderRecord(r, pulled) {
     r.credits.length ? h('details', { class: 'credits' }, h('summary', {}, 'Credits (' + r.credits.length + ')'),
       h('ul', {}, r.credits.map(c => h('li', {}, c.name + (c.role ? ': ' + c.role : ''))))) : null,
     h('div', { class: 'actions' },
-      h('button', { type: 'button', class: 'btn', onclick: pull }, 'Pull another'),
+      h('button', { type: 'button', class: 'btn', onclick: () => pull() }, 'Pull another'),
       h('a', { class: 'btn', href: r.url }, 'View on Discogs')));
 
   put(
@@ -352,17 +353,18 @@ function renderTracks(q) {
 
 /* ---------- pull a record ---------- */
 let lastPulled = [];
-function pull() {
+function pull(replace) {
   if (!C) return;
   // Avoid repeating any of the last 20 pulls.
   const cur = route().parts[0] === 'r' ? +route().parts[1] : null;
   const pool = C.releases.filter(r => r.id !== cur && !lastPulled.includes(r.id));
   const r = pool[Math.floor(Math.random() * pool.length)] || C.releases[0];
   lastPulled.push(r.id); if (lastPulled.length > 20) lastPulled.shift();
-  location.hash = '#/r/' + r.id + '?pulled=1';
+  if (replace === true) { history.replaceState(null, '', '#/r/' + r.id + '?pulled=1'); render(); }
+  else location.hash = '#/r/' + r.id + '?pulled=1';
   announce('Pulled ' + r.title + ' by ' + r.artist);
 }
-document.getElementById('pull').addEventListener('click', pull);
+document.getElementById('pull').addEventListener('click', () => pull());
 
 /* ---------- load ---------- */
 const getJSON = (u, fallback) => fetch(u, { cache: 'no-cache' }).then(r => r.ok ? r.json() : fallback).catch(() => fallback);
